@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,10 +6,14 @@ import 'domain/checkin_manager.dart';
 import 'presentation/dashboard_screen.dart';
 
 Future<void> main() async {
-  // If your local source is synchronous (in-memory), you don't need `async`.
-  // If it needs SharedPreferences (async creation) see the alternative below.
-  final checkInLocalSource = CheckInLocalSourceImpl(); // <-- use Impl
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Prepare your dependencies
+  final checkInLocalSource = CheckInLocalSourceImpl();
   final checkInManager = CheckInManager(checkInLocalSource);
+
+  // Wait until the initial data finishes loading
+  await checkInManager.loadInitialData();
 
   runApp(
     ChangeNotifierProvider.value(

@@ -8,12 +8,16 @@ class CheckInManager extends ChangeNotifier {
   
   // Expose data via getters
   List<DateTime> get checkInDates => _checkInDates;
-  
+
   // Constructor with dependency injection (senior TDD practice)
   CheckInManager(this._localSource) {
     _loadCheckInDates();
   }
 
+    Future<void> loadInitialData() async {
+    await _loadCheckInDates();
+  }
+  
   // --- Data Loading ---
   Future<void> _loadCheckInDates() async {
     _checkInDates = await _localSource.getCheckInDates();
@@ -21,16 +25,23 @@ class CheckInManager extends ChangeNotifier {
     _checkInDates.sort((a, b) => b.compareTo(a));
     notifyListeners();
   }
+
+    // History without today's check-in
+  List<DateTime> get checkInHistory {
+    final today = DateTime.now();
+    return _checkInDates
+        .where((date) => !AppDateUtils.isSameDay(date, today))
+        .toList();
+  }
   
-  // --- Check-In Logic (FR1.0, FR1.2) ---
   bool hasCheckedInToday() {
     final today = DateTime.now();
-    return _checkInDates.any((date) => DateUtils.isSameDay(date, today));
+    return _checkInDates.any((date) => AppDateUtils.isSameDay(date, today));
   }
 
   Future<DateTime?> checkIn() async {
     if (hasCheckedInToday()) {
-      return null; // Already checked in
+      return null;
     }
 
     final now = DateTime.now();
@@ -42,7 +53,7 @@ class CheckInManager extends ChangeNotifier {
     return now;
   }
   
-  // --- Streak Calculation Logic (FR1.7) ---
+  // --- Streak Calculation Logic
   int get currentStreak {
     if (_checkInDates.isEmpty) {
       return 0;
@@ -60,7 +71,7 @@ class CheckInManager extends ChangeNotifier {
 
     // Check if the latest day in the list is NOT today, and NOT yesterday.
     // This allows the streak to be calculated correctly even if today is missed.
-    if (!DateUtils.isSameDay(uniqueCheckInDays.first, DateTime.now())) {
+    if (!AppDateUtils.isSameDay(uniqueCheckInDays.first, DateTime.now())) {
       // If the latest check-in day is not today, the streak calculation must
       // start from that last check-in day backwards.
       // Or, more simply: if today is missed, the streak ends yesterday.
@@ -73,7 +84,7 @@ class CheckInManager extends ChangeNotifier {
     for (final checkedDay in uniqueCheckInDays) {
       final normalizedCheckedDay = DateTime(checkedDay.year, checkedDay.month, checkedDay.day);
       
-      if (DateUtils.isSameDay(normalizedCheckedDay, expectedDay)) {
+      if (AppDateUtils.isSameDay(normalizedCheckedDay, expectedDay)) {
         streak++;
         // Move to the previous day
         expectedDay = expectedDay.subtract(const Duration(days: 1));
